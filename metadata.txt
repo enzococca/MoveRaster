@@ -1,0 +1,18 @@
+[general]
+name=SpostaRaster
+qgisMinimumVersion=3.24
+qgisMaximumVersion=4.99
+description=Move raster and vector layers by clicking on the map / Sposta raster e layer vettoriali cliccando sulla mappa
+version=2.0
+author=Enzo Cocca
+email=enzo.ccc@gmail.com
+about=Move non-georeferenced raster images (PNG/JPG/TIFF) by clicking a destination point on the map. Supports GeoTIFF (internal geotransform) and world files. Can also move associated vector layers together. Features undo support up to 10 levels.
+category=Raster
+icon=icon.png
+tags=raster,move,georeference,world file,geotiff,vector,translate
+homepage=https://github.com/enzococca/SpostaRaster
+repository=https://github.com/enzococca/SpostaRaster
+tracker=https://github.com/enzococca/SpostaRaster/issues
+supportsQt6=True
+hasProcessingProvider=no
+
