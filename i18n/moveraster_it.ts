@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="it_IT">
 <context>
-    <name>SpostaRaster</name>
+    <name>MoveRaster</name>
     <message>
         <source>Move Layer (Raster + Vector)</source>
         <translation>Sposta Layer (Raster + Vettoriale)</translation>
@@ -86,8 +86,8 @@
 {}</translation>
     </message>
     <message>
-        <source>Help - SpostaRaster</source>
-        <translation>Aiuto - SpostaRaster</translation>
+        <source>Help - MoveRaster</source>
+        <translation>Aiuto - MoveRaster</translation>
     </message>
     <message>
         <source>This plugin allows you to move together:</source>
@@ -356,6 +356,50 @@
 {}</source>
         <translation>Errore spostamento layer {}:
 {}</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Lingua</translation>
+    </message>
+    <message>
+        <source>Tutorial</source>
+        <translation>Tutorial</translation>
+    </message>
+    <message>
+        <source>Language Changed</source>
+        <translation>Lingua Cambiata</translation>
+    </message>
+    <message>
+        <source>Language changed to: {}</source>
+        <translation>Lingua cambiata in: {}</translation>
+    </message>
+    <message>
+        <source>Please reload the plugin for changes to take effect.</source>
+        <translation>Ricarica il plugin per applicare le modifiche.</translation>
+    </message>
+    <message>
+        <source>Select Language</source>
+        <translation>Seleziona Lingua</translation>
+    </message>
+    <message>
+        <source>Choose language:</source>
+        <translation>Scegli la lingua:</translation>
+    </message>
+    <message>
+        <source>Note: Reload plugin after changing language.</source>
+        <translation>Nota: Ricaricare il plugin dopo aver cambiato lingua.</translation>
+    </message>
+    <message>
+        <source>Previous</source>
+        <translation>Precedente</translation>
+    </message>
+    <message>
+        <source>Next</source>
+        <translation>Successivo</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Chiudi</translation>
     </message>
 </context>
 </TS>

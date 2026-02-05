@@ -7,7 +7,7 @@ from qgis.PyQt.QtGui import QIcon, QAction
 from qgis.PyQt.QtWidgets import (
     QMessageBox, QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QListWidget, QListWidgetItem, QPushButton, QCheckBox,
-    QGroupBox, QAbstractItemView
+    QGroupBox, QAbstractItemView, QComboBox
 )
 from qgis.gui import QgsMapToolEmitPoint
 from qgis.core import (
@@ -27,10 +27,10 @@ from .resources import *
 
 def tr(message):
     """Get the translation for a string using Qt translation API."""
-    return QCoreApplication.translate('SpostaRaster', message)
+    return QCoreApplication.translate('MoveRaster', message)
 
 
-class SpostaRaster:
+class MoveRaster:
     """
     Plugin to move raster and associated vector layers together.
     Supports GeoTIFF (internal georeferencing) and images with world files.
@@ -48,11 +48,19 @@ class SpostaRaster:
 
         # Initialize locale and translator
         self.plugin_dir = os.path.dirname(__file__)
-        locale = QSettings().value('locale/userLocale')[0:2]
+
+        # Check plugin-specific language setting first, then fall back to QGIS locale
+        plugin_locale = QSettings().value('MoveRaster/language', '')
+        if plugin_locale:
+            locale = plugin_locale
+        else:
+            qgis_locale = QSettings().value('locale/userLocale', 'en')
+            locale = qgis_locale[0:2] if qgis_locale else 'en'
+
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            f'spostaraster_{locale}.qm'
+            f'moveraster_{locale}.qm'
         )
 
         self.translator = None
@@ -71,7 +79,7 @@ class SpostaRaster:
         self.action.setToolTip(tr("Move raster and associated geometries"))
         self.action.triggered.connect(self.show_layer_selector)
         self.iface.addToolBarIcon(self.action)
-        self.iface.addPluginToMenu("&SpostaRaster", self.action)
+        self.iface.addPluginToMenu("&MoveRaster", self.action)
 
         # Undo button
         self.undo_action = QAction(
@@ -83,25 +91,37 @@ class SpostaRaster:
         self.undo_action.triggered.connect(self.undo_move)
         self.undo_action.setEnabled(False)
         self.iface.addToolBarIcon(self.undo_action)
-        self.iface.addPluginToMenu("&SpostaRaster", self.undo_action)
+        self.iface.addPluginToMenu("&MoveRaster", self.undo_action)
 
         # Toggle corner/center mode
         self.mode_action = QAction(tr("Toggle Mode (Corner/Center)"), self.iface.mainWindow())
         self.mode_action.triggered.connect(self.toggle_mode)
-        self.iface.addPluginToMenu("&SpostaRaster", self.mode_action)
+        self.iface.addPluginToMenu("&MoveRaster", self.mode_action)
 
         # Help button
         self.help_action = QAction(tr("Help"), self.iface.mainWindow())
         self.help_action.triggered.connect(self.show_help)
-        self.iface.addPluginToMenu("&SpostaRaster", self.help_action)
+        self.iface.addPluginToMenu("&MoveRaster", self.help_action)
+
+        # Language selector
+        self.language_action = QAction(tr("Language") + " / Lingua", self.iface.mainWindow())
+        self.language_action.triggered.connect(self.show_language_selector)
+        self.iface.addPluginToMenu("&MoveRaster", self.language_action)
+
+        # Tutorial
+        self.tutorial_action = QAction(tr("Tutorial"), self.iface.mainWindow())
+        self.tutorial_action.triggered.connect(self.show_tutorial)
+        self.iface.addPluginToMenu("&MoveRaster", self.tutorial_action)
 
     def unload(self):
         self.iface.removeToolBarIcon(self.action)
         self.iface.removeToolBarIcon(self.undo_action)
-        self.iface.removePluginMenu("&SpostaRaster", self.action)
-        self.iface.removePluginMenu("&SpostaRaster", self.undo_action)
-        self.iface.removePluginMenu("&SpostaRaster", self.mode_action)
-        self.iface.removePluginMenu("&SpostaRaster", self.help_action)
+        self.iface.removePluginMenu("&MoveRaster", self.action)
+        self.iface.removePluginMenu("&MoveRaster", self.undo_action)
+        self.iface.removePluginMenu("&MoveRaster", self.mode_action)
+        self.iface.removePluginMenu("&MoveRaster", self.help_action)
+        self.iface.removePluginMenu("&MoveRaster", self.language_action)
+        self.iface.removePluginMenu("&MoveRaster", self.tutorial_action)
 
         if self.translator:
             QCoreApplication.removeTranslator(self.translator)
@@ -111,7 +131,7 @@ class SpostaRaster:
         self.use_center = not self.use_center
         mode = tr("Center") if self.use_center else tr("Upper Left Corner")
         iface.messageBar().pushMessage(
-            "SpostaRaster",
+            "MoveRaster",
             tr("Mode: {}").format(mode),
             level=0,
             duration=2
@@ -148,7 +168,7 @@ class SpostaRaster:
             mode = tr("center") if self.use_center else tr("upper left corner")
             sel_info = tr(" (selected only)") if selected_only else ""
             iface.messageBar().pushMessage(
-                "SpostaRaster",
+                "MoveRaster",
                 tr("Click on the map to move layers (mode: {}){}").format(mode, sel_info),
                 level=0,
                 duration=5
@@ -185,7 +205,7 @@ class SpostaRaster:
 
             self.canvas.refresh()
             iface.messageBar().pushMessage(
-                "SpostaRaster",
+                "MoveRaster",
                 tr("Move undone!"),
                 level=0,
                 duration=3
@@ -295,9 +315,362 @@ class SpostaRaster:
         )
         QMessageBox.information(
             self.iface.mainWindow(),
-            tr("Help - SpostaRaster"),
+            tr("Help - MoveRaster"),
             help_text
         )
+
+    def show_language_selector(self):
+        """Show dialog to select plugin language."""
+        dialog = LanguageSelectorDialog(self.iface)
+        if dialog.exec():
+            selected_lang = dialog.get_selected_language()
+            QSettings().setValue('MoveRaster/language', selected_lang)
+            QMessageBox.information(
+                self.iface.mainWindow(),
+                tr("Language Changed"),
+                tr("Language changed to: {}").format(dialog.get_language_name(selected_lang)) + "\n\n" +
+                tr("Please reload the plugin for changes to take effect.") + "\n" +
+                "(Plugins > Plugin Reloader)"
+            )
+
+    def show_tutorial(self):
+        """Show interactive tutorial for the plugin."""
+        dialog = TutorialDialog(self.iface)
+        dialog.exec()
+
+
+class LanguageSelectorDialog(QDialog):
+    """Dialog to select plugin language."""
+
+    LANGUAGES = {
+        'it': 'Italiano',
+        'en': 'English'
+    }
+
+    def __init__(self, iface):
+        super().__init__(iface.mainWindow())
+        self.iface = iface
+        self.setWindowTitle(tr("Select Language") + " / Seleziona Lingua")
+        self.setMinimumWidth(300)
+
+        layout = QVBoxLayout()
+
+        # Language label
+        label = QLabel(tr("Choose language:") + " / Scegli la lingua:")
+        layout.addWidget(label)
+
+        # Language combo box
+        self.language_combo = QComboBox()
+        current_lang = QSettings().value('MoveRaster/language', '')
+
+        for code, name in self.LANGUAGES.items():
+            self.language_combo.addItem(name, code)
+            if code == current_lang:
+                self.language_combo.setCurrentIndex(self.language_combo.count() - 1)
+
+        layout.addWidget(self.language_combo)
+
+        # Info label
+        info_label = QLabel(tr("Note: Reload plugin after changing language.") + "\n" +
+                           "Nota: Ricaricare il plugin dopo aver cambiato lingua.")
+        info_label.setStyleSheet("color: #666666; font-size: 10px;")
+        layout.addWidget(info_label)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton(tr("OK"))
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton(tr("Cancel") + " / Annulla")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)
+
+    def get_selected_language(self):
+        return self.language_combo.currentData()
+
+    def get_language_name(self, code):
+        return self.LANGUAGES.get(code, code)
+
+
+class TutorialDialog(QDialog):
+    """Interactive tutorial dialog."""
+
+    def __init__(self, iface):
+        super().__init__(iface.mainWindow())
+        self.iface = iface
+        self.current_step = 0
+
+        # Tutorial steps - bilingual
+        self.steps = self._get_tutorial_steps()
+
+        self.setWindowTitle(tr("Tutorial - MoveRaster"))
+        self.setMinimumWidth(550)
+        self.setMinimumHeight(400)
+
+        layout = QVBoxLayout()
+
+        # Step indicator
+        self.step_label = QLabel()
+        self.step_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #333333;")
+        layout.addWidget(self.step_label)
+
+        # Content area
+        self.content_label = QLabel()
+        self.content_label.setWordWrap(True)
+        self.content_label.setStyleSheet("font-size: 12px; padding: 10px; background-color: #f0f0f0; color: #333333; border: 1px solid #cccccc; border-radius: 5px;")
+        self.content_label.setMinimumHeight(250)
+        layout.addWidget(self.content_label)
+
+        # Navigation buttons
+        button_layout = QHBoxLayout()
+
+        self.prev_btn = QPushButton(tr("Previous") + " / Precedente")
+        self.prev_btn.clicked.connect(self.prev_step)
+        button_layout.addWidget(self.prev_btn)
+
+        self.next_btn = QPushButton(tr("Next") + " / Successivo")
+        self.next_btn.clicked.connect(self.next_step)
+        button_layout.addWidget(self.next_btn)
+
+        self.close_btn = QPushButton(tr("Close") + " / Chiudi")
+        self.close_btn.clicked.connect(self.accept)
+        button_layout.addWidget(self.close_btn)
+
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+        self._update_display()
+
+    def _get_tutorial_steps(self):
+        """Return tutorial steps based on current language."""
+        lang = QSettings().value('MoveRaster/language', '')
+        if not lang:
+            qgis_locale = QSettings().value('locale/userLocale', 'en')
+            lang = qgis_locale[0:2] if qgis_locale else 'en'
+
+        if lang == 'it':
+            return [
+                {
+                    'title': '👋 Benvenuto in MoveRaster!',
+                    'content': (
+                        "Questo plugin ti permette di spostare layer raster e vettoriali "
+                        "semplicemente cliccando sulla mappa.\n\n"
+                        "È utile per:\n"
+                        "• Georeferenziare immagini non georeferenziate\n"
+                        "• Correggere la posizione di raster esistenti\n"
+                        "• Spostare insieme raster e vettoriali associati\n\n"
+                        "Clicca 'Successivo' per continuare il tutorial."
+                    )
+                },
+                {
+                    'title': '📂 Passo 1: Seleziona i Layer',
+                    'content': (
+                        "Clicca sul pulsante 'Sposta Layer' nella toolbar.\n\n"
+                        "Si aprirà una finestra dove potrai:\n\n"
+                        "1. LAYER RASTER: Seleziona il raster da spostare. "
+                        "Verrà usato come riferimento per calcolare lo spostamento.\n\n"
+                        "2. LAYER VETTORIALI: Seleziona uno o più layer vettoriali "
+                        "da spostare insieme al raster. Usa 'Seleziona Tutti' per comodità.\n\n"
+                        "3. OPZIONI:\n"
+                        "   • Modalità angolo/centro\n"
+                        "   • Solo geometrie selezionate"
+                    )
+                },
+                {
+                    'title': '🎯 Passo 2: Scegli la Modalità',
+                    'content': (
+                        "Hai due modalità di spostamento:\n\n"
+                        "📍 ANGOLO SUPERIORE SINISTRO (default):\n"
+                        "Il punto dove clicchi diventerà l'angolo superiore sinistro del raster.\n\n"
+                        "📍 CENTRO:\n"
+                        "Il punto dove clicchi diventerà il centro del raster.\n\n"
+                        "Scegli la modalità in base alle tue esigenze. "
+                        "Se hai un punto di riferimento noto (es. un angolo), usa 'Angolo'. "
+                        "Se vuoi centrare il raster su un punto, usa 'Centro'."
+                    )
+                },
+                {
+                    'title': '🖱️ Passo 3: Clicca sulla Mappa',
+                    'content': (
+                        "Dopo aver cliccato OK nella finestra di selezione:\n\n"
+                        "1. Il cursore cambierà indicando che lo strumento è attivo\n\n"
+                        "2. Clicca sulla mappa nel punto di DESTINAZIONE\n\n"
+                        "3. Apparirà una finestra di conferma con:\n"
+                        "   • Offset X e Y calcolati\n"
+                        "   • Tipo di raster (GeoTIFF o World File)\n"
+                        "   • Numero di geometrie coinvolte\n\n"
+                        "4. Conferma per eseguire lo spostamento"
+                    )
+                },
+                {
+                    'title': '↩️ Passo 4: Annulla se Necessario',
+                    'content': (
+                        "Hai fatto un errore? Nessun problema!\n\n"
+                        "Clicca sul pulsante 'Annulla Spostamento' per ripristinare "
+                        "la posizione precedente.\n\n"
+                        "Il plugin supporta fino a 10 LIVELLI DI UNDO, quindi puoi "
+                        "annullare più spostamenti consecutivi.\n\n"
+                        "⚠️ IMPORTANTE:\n"
+                        "I file vengono modificati direttamente su disco. "
+                        "Si consiglia sempre di fare un backup prima di operazioni importanti!"
+                    )
+                },
+                {
+                    'title': '📋 Formati Supportati',
+                    'content': (
+                        "Il plugin supporta diversi formati raster:\n\n"
+                        "🖼️ GeoTIFF (.tif, .tiff):\n"
+                        "Modifica il geotransform interno al file. "
+                        "Non serve un file esterno.\n\n"
+                        "🖼️ Immagini con World File:\n"
+                        "• PNG → .pgw\n"
+                        "• JPG/JPEG → .jgw\n"
+                        "• TIFF senza georef → .tfw\n"
+                        "• Altri formati → .wld\n\n"
+                        "Il world file contiene i parametri di georeferenziazione "
+                        "e viene creato/modificato automaticamente."
+                    )
+                },
+                {
+                    'title': '✅ Hai Completato il Tutorial!',
+                    'content': (
+                        "Ora sai come usare MoveRaster!\n\n"
+                        "RIASSUNTO:\n"
+                        "1. Clicca 'Sposta Layer'\n"
+                        "2. Seleziona raster e vettoriali\n"
+                        "3. Scegli modalità (angolo/centro)\n"
+                        "4. Clicca sulla mappa\n"
+                        "5. Conferma lo spostamento\n\n"
+                        "💡 SUGGERIMENTO:\n"
+                        "Usa 'Solo geometrie selezionate' se vuoi spostare "
+                        "solo alcune feature dei layer vettoriali.\n\n"
+                        "Buon lavoro! 🎉"
+                    )
+                }
+            ]
+        else:
+            # English
+            return [
+                {
+                    'title': '👋 Welcome to MoveRaster!',
+                    'content': (
+                        "This plugin allows you to move raster and vector layers "
+                        "simply by clicking on the map.\n\n"
+                        "It's useful for:\n"
+                        "• Georeferencing non-georeferenced images\n"
+                        "• Correcting the position of existing rasters\n"
+                        "• Moving rasters and associated vectors together\n\n"
+                        "Click 'Next' to continue the tutorial."
+                    )
+                },
+                {
+                    'title': '📂 Step 1: Select Layers',
+                    'content': (
+                        "Click the 'Move Layer' button in the toolbar.\n\n"
+                        "A window will open where you can:\n\n"
+                        "1. RASTER LAYER: Select the raster to move. "
+                        "It will be used as reference for calculating the offset.\n\n"
+                        "2. VECTOR LAYERS: Select one or more vector layers "
+                        "to move together with the raster. Use 'Select All' for convenience.\n\n"
+                        "3. OPTIONS:\n"
+                        "   • Corner/center mode\n"
+                        "   • Selected geometries only"
+                    )
+                },
+                {
+                    'title': '🎯 Step 2: Choose the Mode',
+                    'content': (
+                        "You have two movement modes:\n\n"
+                        "📍 UPPER LEFT CORNER (default):\n"
+                        "The point where you click will become the upper left corner of the raster.\n\n"
+                        "📍 CENTER:\n"
+                        "The point where you click will become the center of the raster.\n\n"
+                        "Choose the mode based on your needs. "
+                        "If you have a known reference point (e.g., a corner), use 'Corner'. "
+                        "If you want to center the raster on a point, use 'Center'."
+                    )
+                },
+                {
+                    'title': '🖱️ Step 3: Click on the Map',
+                    'content': (
+                        "After clicking OK in the selection window:\n\n"
+                        "1. The cursor will change indicating the tool is active\n\n"
+                        "2. Click on the map at the DESTINATION point\n\n"
+                        "3. A confirmation window will appear with:\n"
+                        "   • Calculated X and Y offset\n"
+                        "   • Raster type (GeoTIFF or World File)\n"
+                        "   • Number of geometries involved\n\n"
+                        "4. Confirm to execute the move"
+                    )
+                },
+                {
+                    'title': '↩️ Step 4: Undo if Needed',
+                    'content': (
+                        "Made a mistake? No problem!\n\n"
+                        "Click the 'Undo Move' button to restore "
+                        "the previous position.\n\n"
+                        "The plugin supports up to 10 UNDO LEVELS, so you can "
+                        "undo multiple consecutive moves.\n\n"
+                        "⚠️ IMPORTANT:\n"
+                        "Files are modified directly on disk. "
+                        "It's always recommended to make a backup before important operations!"
+                    )
+                },
+                {
+                    'title': '📋 Supported Formats',
+                    'content': (
+                        "The plugin supports various raster formats:\n\n"
+                        "🖼️ GeoTIFF (.tif, .tiff):\n"
+                        "Modifies the internal geotransform. "
+                        "No external file needed.\n\n"
+                        "🖼️ Images with World File:\n"
+                        "• PNG → .pgw\n"
+                        "• JPG/JPEG → .jgw\n"
+                        "• TIFF without georef → .tfw\n"
+                        "• Other formats → .wld\n\n"
+                        "The world file contains georeferencing parameters "
+                        "and is created/modified automatically."
+                    )
+                },
+                {
+                    'title': '✅ Tutorial Completed!',
+                    'content': (
+                        "Now you know how to use MoveRaster!\n\n"
+                        "SUMMARY:\n"
+                        "1. Click 'Move Layer'\n"
+                        "2. Select raster and vectors\n"
+                        "3. Choose mode (corner/center)\n"
+                        "4. Click on the map\n"
+                        "5. Confirm the move\n\n"
+                        "💡 TIP:\n"
+                        "Use 'Selected geometries only' if you want to move "
+                        "only some features of vector layers.\n\n"
+                        "Happy mapping! 🎉"
+                    )
+                }
+            ]
+
+    def _update_display(self):
+        """Update the display for current step."""
+        step = self.steps[self.current_step]
+        self.step_label.setText(f"{step['title']} ({self.current_step + 1}/{len(self.steps)})")
+        self.content_label.setText(step['content'])
+
+        self.prev_btn.setEnabled(self.current_step > 0)
+        self.next_btn.setEnabled(self.current_step < len(self.steps) - 1)
+
+    def next_step(self):
+        if self.current_step < len(self.steps) - 1:
+            self.current_step += 1
+            self._update_display()
+
+    def prev_step(self):
+        if self.current_step > 0:
+            self.current_step -= 1
+            self._update_display()
 
 
 class LayerSelectorDialog(QDialog):
@@ -623,14 +996,14 @@ class MultiLayerClickTool(QgsMapToolEmitPoint):
         if success:
             sel_info = tr(" (selected only)") if self.selected_only else ""
             iface.messageBar().pushMessage(
-                "SpostaRaster",
+                "MoveRaster",
                 tr("{} layers moved successfully!{}").format(layer_count, sel_info),
                 level=0,
                 duration=3
             )
         else:
             iface.messageBar().pushMessage(
-                "SpostaRaster",
+                "MoveRaster",
                 tr("Some layers may not have been moved correctly"),
                 level=1,
                 duration=5

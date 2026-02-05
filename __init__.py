@@ -1,3 +1,3 @@
 def classFactory(iface):
-    from .sposta_raster import SpostaRaster
-    return SpostaRaster(iface)
+    from .move_raster import MoveRaster
+    return MoveRaster(iface)

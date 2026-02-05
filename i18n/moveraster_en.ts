@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
 <context>
-    <name>SpostaRaster</name>
+    <name>MoveRaster</name>
     <message>
         <source>Move Layer (Raster + Vector)</source>
         <translation>Move Layer (Raster + Vector)</translation>
@@ -86,8 +86,8 @@
 {}</translation>
     </message>
     <message>
-        <source>Help - SpostaRaster</source>
-        <translation>Help - SpostaRaster</translation>
+        <source>Help - MoveRaster</source>
+        <translation>Help - MoveRaster</translation>
     </message>
     <message>
         <source>This plugin allows you to move together:</source>
@@ -356,6 +356,50 @@
 {}</source>
         <translation>Error moving layer {}:
 {}</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Language</translation>
+    </message>
+    <message>
+        <source>Tutorial</source>
+        <translation>Tutorial</translation>
+    </message>
+    <message>
+        <source>Language Changed</source>
+        <translation>Language Changed</translation>
+    </message>
+    <message>
+        <source>Language changed to: {}</source>
+        <translation>Language changed to: {}</translation>
+    </message>
+    <message>
+        <source>Please reload the plugin for changes to take effect.</source>
+        <translation>Please reload the plugin for changes to take effect.</translation>
+    </message>
+    <message>
+        <source>Select Language</source>
+        <translation>Select Language</translation>
+    </message>
+    <message>
+        <source>Choose language:</source>
+        <translation>Choose language:</translation>
+    </message>
+    <message>
+        <source>Note: Reload plugin after changing language.</source>
+        <translation>Note: Reload plugin after changing language.</translation>
+    </message>
+    <message>
+        <source>Previous</source>
+        <translation>Previous</translation>
+    </message>
+    <message>
+        <source>Next</source>
+        <translation>Next</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Close</translation>
     </message>
 </context>
 </TS>
